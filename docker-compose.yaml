@@ -39,7 +39,7 @@ services:
       - DAYTRADER_PORTFOLIOS_SERVICE=https://daytrader-portfolios:3443
       - DAYTRADER_QUOTES_SERVICE=https://daytrader-quotes:4443
       - DAYTRADER_DATABASE_DRIVER=com.mysql.jdbc.Driver
-      - DAYTRADER_DATABASE_URL=jdbc:mysql://mysqlaccount/accounts
+      - DAYTRADER_DATABASE_URL=jdbc:mysql://mysqlaccount/accounts?autoReconnect=true&useSSL=false
       - DAYTRADER_DATABASE_USERNAME=sudheesh
       - DAYTRADER_DATABASE_PASSWORD=dummy      
 
@@ -76,7 +76,7 @@ services:
       - DAYTRADER_PORTFOLIOS_SERVICE=https://daytrader-portfolios:3443
       - DAYTRADER_QUOTES_SERVICE=https://daytrader-quotes:4443
       - DAYTRADER_DATABASE_DRIVER=com.mysql.jdbc.Driver
-      - DAYTRADER_DATABASE_URL=jdbc:mysql://mysqlportfolios/portfolios
+      - DAYTRADER_DATABASE_URL=jdbc:mysql://mysqlportfolios/portfolios?autoReconnect=true&useSSL=false
       - DAYTRADER_DATABASE_USERNAME=sudheesh
       - DAYTRADER_DATABASE_PASSWORD=dummy
   daytrader-quotes:
@@ -94,7 +94,7 @@ services:
       - DAYTRADER_PORTFOLIOS_SERVICE=https://daytrader-portfolios:3443
       - DAYTRADER_QUOTES_SERVICE=https://daytrader-quotes:4443
       - DAYTRADER_DATABASE_DRIVER=com.mysql.jdbc.Driver
-      - DAYTRADER_DATABASE_URL=jdbc:mysql://mysqlquotes/quotes
+      - DAYTRADER_DATABASE_URL=jdbc:mysql://mysqlquotes/quotes?autoReconnect=true&useSSL=false
       - DAYTRADER_DATABASE_USERNAME=sudheesh
       - DAYTRADER_DATABASE_PASSWORD=dummy
       
