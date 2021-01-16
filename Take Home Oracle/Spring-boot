@@ -1,0 +1,4 @@
+log.level.org.springframework.web=DEBU
+with No @responsebody , spring looks for view with name of value returned
+spring.mvc.view.prefix/sufix for view resolving & tomacat-embedded jasper 
+modelMap & ${}

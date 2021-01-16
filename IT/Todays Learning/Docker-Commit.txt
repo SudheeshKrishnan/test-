@@ -1,0 +1,10 @@
+docker run -it tomcat:8.0.51-jre8-alpine /bin/sh
+
+then check for catalina.sh scripts using ls command
+
+then note down the id of container using ps
+
+then use it with followinf commad
+docker commit -c "CMD 'catalina.sh' 'run' " 1fc63362fce0
+sha256:6136baa0b501ef19c6a31a9e5b558317d66a598da258479a4e42f7d9445fc8d1
+docker run 6136baa0b501e

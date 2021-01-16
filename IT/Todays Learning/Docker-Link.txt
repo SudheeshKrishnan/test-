@@ -1,0 +1,2 @@
+docker run -p 8081:8081 --link rediscontainer --network local vayalankatil/visitor-nodejs
+docker run -p 6379:6379 --name rediscontainer --network local redis

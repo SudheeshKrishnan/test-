@@ -1,0 +1,28 @@
+
+
+                az group create --name kubernetes-resource-group --location westeurope
+				az ad sp create-for-rbac --skip-assignment --name kubernetes-cluster-service-principal
+
+
+az aks create --name vayalankatilcluster  --node-count 2 --enable-addons monitoring --resource-group kubernetes-resource-group --vm-set-type VirtualMachineScaleSets --load-balancer-sku standard --enable-cluster-autoscaler  --min-count 1 --max-count 2 --generate-ssh-keys --service-principal c40091af-9099-4a5b-8a3a-e39f02423de1  --client-secret uZYuI5Qy~daqHjbuU1~~63J5QhpB0pSlTF
+
+az aks get-credentials --resource-group kubernetes-resource-group --name vayalankatilcluster 
+
+docker login --username firstUser_dev --password 416592256572.dkr.ecr.us-east-1.amazonaws.com/daytrader-web
+https://localhost:4443/swagger-ui.html
+-----------------------------------------------------------------------------------
+docker run --rm --name kompose -it -v /path/to/your/folder:/src femtopixel/kompose
+PS H:\> docker run --rm --name kompose -it -v C:\Users\A255558\Downloads\docker-master\docker-master:/src femtopixel/kompose convert
+INFO Kubernetes file "mysql-service.yaml" created
+INFO Kubernetes file "todo-rest-api-service.yaml" created
+INFO Kubernetes file "mysql-deployment.yaml" created
+INFO Kubernetes file "todo-rest-api-deployment.yaml" created
+
+
+docker run -it --name komposeui -p 8000:8000 jadcham/komposeui
+
+
+---------------------------------------------------------------------------------------
+
+kubectl describe pod hello-world-rest-api-85995ddd5c-msjsm
+kubectl get events --sort-by=.metadata.creationTimestamp

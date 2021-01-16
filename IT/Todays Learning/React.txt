@@ -1,0 +1,4 @@
+After building project
+install serve  by :npm install -g serve
+
+then serve -s build

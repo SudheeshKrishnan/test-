@@ -1,0 +1,3 @@
+docker run -it -p 3000:3000 -v /app/node_modules -v C:\Users\SVAILANK\frontend:/app -e CHOKIDAR_USEPOLLING=true CONTAINER_ID
+docker run -it  -v /app/node_modules -v C:\Users\SVAILANK\frontend:/app -e CHOKIDAR_USEPOLLING=true react-app
+https://reactgo.com/npm-err-cb-never-called/

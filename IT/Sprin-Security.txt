@@ -1,0 +1,262 @@
+
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+  private static final String AUTHORITY_IDENTITYPROVIDER_ADMIN = "identityprovider_admin";
+  private static final String ADMIN_PATHS = "/admin/*";
+  @Autowired
+  private ClientRepository clientRepository;
+
+  @Autowired
+  private UserInvitationRepository invitationRepository;
+
+  @Autowired
+  private UserRoleRepository userRoleRepository;
+
+  @Autowired
+  private TokenManager tokenManager;
+
+  @Autowired
+  private IdentityProviderTokenInitializer tokenInitializer;
+
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+
+  @Autowired
+  private DataSource dataSource;
+  @Autowired
+  private VGTLogoutHandler vGTLogoutHandler;
+
+  @Override
+  @Bean
+  public AuthenticationManager authenticationManagerBean() throws Exception {
+    return super.authenticationManagerBean();
+  }
+
+  @Override
+  protected AuthenticationManager authenticationManager() throws Exception {
+    return super.authenticationManager();
+  }
+
+  @Autowired
+  public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    auth
+        .authenticationProvider(idpAuthenticationProvider())
+        .authenticationProvider(idprFMSAuthenticationProvider())
+        .authenticationProvider(idpAEMPAuthenticationProvider())
+        .authenticationProvider(idpDFOLAuthenticationProvider());
+  }
+
+  @Override
+  protected void configure(HttpSecurity http) throws Exception {
+    CharacterEncodingFilter filter = new CharacterEncodingFilter();
+    filter.setEncoding("UTF-8");
+    filter.setForceEncoding(true);
+    http.addFilterBefore(filter, ChannelProcessingFilter.class);
+
+    // @formatter:off
+    http
+        .addFilterBefore(vgtCorsFilterFilter(), ChannelProcessingFilter.class)
+        .authenticationProvider(idpX509AuthenticationProvider())
+        .x509()
+        .subjectPrincipalRegex("CN=(.+?)\\.")
+        .and()
+        .addFilterBefore(new CssFilter(clientRepository), ChannelProcessingFilter.class)
+        .addFilterBefore(new SessionDataExtractionFilter(clientRepository), ChannelProcessingFilter.class)
+        .addFilterBefore(new OAuth2AuthenticationFilter(clientRepository, passwordEncoder), SessionDataExtractionFilter.class)
+		.addFilterBefore(new CertificateAuthenticationFilter(), SessionDataExtractionFilter.class)
+		.addFilterBefore(tokenAndPermissionHandlingFilter(), BasicAuthenticationFilter.class)
+        .addFilterBefore(rFMSBasicAuthenticationFilter(), RFMSBasicAuthenticationFilter.class)
+        .authorizeRequests()
+        // Everyone is allowed to make API calls => /api/**
+        .antMatchers("/resources/*", "/assets/css/*", "/assets/style/**", "/ping/*", "/api/**", "/logout", "/logout/empty",
+            "/logout/images/logout.png",
+            "/forgotpassword", "/forgotvcpassword", "/resetpassword", "/resetcredential", "/changepassword-nologin", "/activate", "/activateoemaccount",
+            "/ciam/ciam-callback",
+            "/ciam/ciam-callback-auth",
+            "/ciam-callback", "/ciam-callback-auth", "/ciam-confirm-email", "/ciam-confirm-registration", "/ciam-set-password", "/ciam-oauth-authorize",
+            "/diam-authorize", "/auth-error", "/auth-error/*", "/login", "/passwordRules", "/v2/api-docs",
+            "/index*", "/static/**", "/*.js", "/*.json", "/*.ico", "/perform_login",
+            "/documentation/**")
+        .permitAll()
+        .antMatchers(ADMIN_PATHS)
+        .hasAuthority(AUTHORITY_IDENTITYPROVIDER_ADMIN)
+        .anyRequest()
+        .authenticated()
+        .and()
+        .formLogin()
+        .loginPage("/login")
+        // .loginProcessingUrl("/perform_login")
+        .failureHandler(new VGTLoginFailureHandler())
+        .permitAll()
+        .successHandler(authenticationSuccessHandler())
+        .and()
+        .csrf()
+        // Disable CSRF protection for some endpoints
+        .requireCsrfProtectionMatcher(
+            new CsrfDisabledProtectionMatcher("/identityprovider/api", "/identityprovider/diam-authorize", "/identityprovider/perform_login",
+                "/identityprovider/login"))
+        .and()
+        .exceptionHandling()
+        .defaultAuthenticationEntryPointFor(getLoginUrlAuthenticationEntryPoint(), new ContinueEntryPoint.VGTRequestMatcher(clientRepository))
+        .and()
+        .rememberMe()
+        .key("internalSecretKey")
+        .rememberMeServices(rememberMeServices())
+        .and()
+        .logout()
+        .addLogoutHandler(vGTLogoutHandler())
+        .logoutRequestMatcher(new VGTLogoutRequestMatcher())
+        .deleteCookies("JSESSIONID")
+        .logoutUrl("/idp_logout")
+        .logoutSuccessUrl("/login")
+        // HTTP Session is invalidated in VGTLogoutHandler
+        .invalidateHttpSession(true)
+        .permitAll()
+        .and()
+        .addFilterBefore(new InviteTokenAuthenticationFilter(invitationRepository, tokenInitializer), ExceptionTranslationFilter.class)
+        .addFilterBefore(new WSSAuthenticationFilter(invitationRepository, tokenInitializer), ExceptionTranslationFilter.class)
+        .exceptionHandling()
+        .accessDeniedPage("/403")
+        .accessDeniedHandler(accessDeniedHandler());
+    // @formatter:on
+  }
+
+  private RFMSBasicAuthenticationFilter rFMSBasicAuthenticationFilter() throws Exception {
+    BasicAuthenticationEntryPoint entryPoint = new BasicAuthenticationEntryPoint();
+    RFMSBasicAuthenticationFilter filter = new RFMSBasicAuthenticationFilter(authenticationManager(), entryPoint, clientRepository);
+    filter.setAuthenticationDetailsSource(new RFMSAuthenticationDetailsSource());
+    return filter;
+  }
+
+  @Override
+  public void configure(WebSecurity web) throws Exception {
+    super.configure(web);
+    // web.debug(true);
+  }
+
+  @Bean
+  public AccessDeniedHandler accessDeniedHandler() {
+    return new VGCSAccessDeniedHandler();
+  }
+
+  @Bean
+  public IdentityProviderTokenInitializer identityProviderTokenInitializer() {
+    return new IdentityProviderTokenInitializer(tokenManager);
+  }
+
+  @Bean
+  public AuthenticationSuccessHandler authenticationSuccessHandler() {
+    return new VGTAuthenticationSuccessHandler();
+  }
+
+  @Bean
+  public VGTAuthenticationProvider idpAuthenticationProvider() {
+    return new VGTAuthenticationProvider(userRoleRepository, clientRepository, passwordEncoder());
+  }
+
+  @Bean
+  public AdminVGTAuthenticationProvider adminIdpAuthenticationProvider() {
+    return new AdminVGTAuthenticationProvider(userRoleRepository, clientRepository, passwordEncoder());
+  }
+
+  @Bean
+  public rFMSAuthenticationProvider idprFMSAuthenticationProvider() {
+    return new rFMSAuthenticationProvider();
+  }
+
+  @Bean
+  public DFOLAuthenticationProvider idpDFOLAuthenticationProvider() {
+    return new DFOLAuthenticationProvider(clientRepository);
+  }
+
+  @Bean
+  public LoginUrlAuthenticationEntryPoint getLoginUrlAuthenticationEntryPoint() {
+    LoginUrlAuthenticationEntryPoint l = new ContinueEntryPoint("/login");
+    l.setUseForward(false);
+    return l;
+  }
+
+  @Bean
+  public VGTCorsFilter vgtCorsFilterFilter() throws Exception {
+    return new VGTCorsFilter();
+  }
+
+  private class IDPX509AuthenticationProvider extends PreAuthenticatedAuthenticationProvider {
+    final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+      log.debug("idpX509AuthenticationProvider trying to authenticate {}", authentication);
+      final Authentication preAuthenticate = super.authenticate(authentication);
+      log.debug("idpX509AuthenticationProvider {} authenticated {}", preAuthenticate.isAuthenticated() ? "successfully" : "unsuccessfully", authentication);
+      SecurityContextHolder.getContext().setAuthentication(preAuthenticate);
+      return idpAuthenticationProvider().authenticate(preAuthenticate);
+    }
+  }
+
+  @Bean
+  public AuthenticationProvider idpX509AuthenticationProvider() {
+    final IDPX509AuthenticationProvider idpx509AuthenticationProvider = new IDPX509AuthenticationProvider();
+    UserDetailsByNameServiceWrapper<PreAuthenticatedAuthenticationToken> authenticationUserDetailsService = new UserDetailsByNameServiceWrapper<>();
+    authenticationUserDetailsService.setUserDetailsService(username -> new User(username, username, new HashSet<>()));
+    idpx509AuthenticationProvider.setPreAuthenticatedUserDetailsService(authenticationUserDetailsService);
+    return idpx509AuthenticationProvider;
+  }
+
+  @Bean
+  TokenAndPermissionEvaluator tokenAndPermissionEvaluator() {
+    return new TokenAndPermissionEvaluator();
+  }
+
+  @Bean
+  public VGTTokenAndPermissionHandlingFilter tokenAndPermissionHandlingFilter() {
+    return new VGTTokenAndPermissionHandlingFilter();
+  }
+ 
+  @Bean
+  public DaoAuthenticationProvider daoAuthenticationProvider(PasswordEncoder passwordEncoder) {
+    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+    authProvider.setUserDetailsService(username -> new User(username, username, new HashSet<>()));
+    authProvider.setPasswordEncoder(passwordEncoder);
+    return authProvider;
+  }
+
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+  }
+
+  @Bean
+  public AEMPAuthenticationProvider idpAEMPAuthenticationProvider() {
+    return new AEMPAuthenticationProvider(clientRepository, passwordEncoder());
+  }
+
+  @Bean
+  public PersistentTokenBasedRememberMeServices rememberMeServices() {
+    PersistentTokenBasedRememberMeServices services = new PersistentTokenBasedRememberMeServices("internalSecretKey", vgcsUserDetailsService(),
+        persistentTokenRepository());
+    return services;
+  }
+
+  @Bean
+  public VGCSUserDetailsService vgcsUserDetailsService() {
+    return new VGCSUserDetailsService();
+  }
+
+  @Bean
+  public VGTLogoutHandler vGTLogoutHandler() {
+    return new VGTLogoutHandler();
+  }
+
+  @Bean
+  public PersistentTokenRepository persistentTokenRepository() {
+    JdbcTokenRepositoryImpl tokenRepositoryImpl = new JdbcTokenRepositoryImpl();
+    tokenRepositoryImpl.setCreateTableOnStartup(Boolean.FALSE);
+    tokenRepositoryImpl.setDataSource(dataSource);
+    return tokenRepositoryImpl;
+  }
+
+}

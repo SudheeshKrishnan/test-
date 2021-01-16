@@ -1,0 +1,84 @@
+Miro
+rest,cloud enabled deployable unit
+Challenged bounded context,config managment,dynamic sacle,visibilty,pack of crads fault tolrenace
+advntage:language agnostic,dymanmic scalg,faster release cycle
+
+ConfigServer
+limiservice.proper
+limiservice.qa.proper
+limitservice.min & max
+1 .Client will config client to connect to config server
+2 @(configurationproperties("limit") or @value //sud have setters
+3 Set up config server now dependency config-server & @enableconfigserver
+   a) now instll git & store limit-service.properties add to git
+   b) connect config server to git copy location of git and  application.property of config server
+       spring.config.server.git.url=url
+	   c) configure for multiple env like localhost:8080/limit-service/default or qa
+	   
+4. Connect config server & limit service
+  a) change application.property to bootstrap.properties
+b) config server ur like spring.cloud.config.uri="https:localhost:80//
+
+5. Pick value based on profiles
+spring.profile.active=dev
+
+
+FEIGN & RIBBION
+REsrtemplate.getforentity
+
+1. Add dependency Spring cloud starter feign  
+@enablefeignclient(package)
+see mobile
+2 create new interface like jpa
+
+RIBBON
+
+dependecy starter ribbon
+see mobile
+
+EUREKA
+1. set up Eserver & register all service with
+ a .eureka server & enable eureka serbver & propert eureka.client.register-with-eureka=false
+ b. spring-cloud -starter-eureka & @enablediscoverclient & property
+ eureka.client.service-url.defaulr-zone=url of eureka server
+ 
+ now remove name.ribbon.list of urls remove
+ 
+ APIGATE way
+ 
+ ZUUl   1.set up componet
+ a) add zuul dependency & @enablezuulproxy 
+ 
+ 2.wat it do see MOb
+ 3.make all request pass throgh Api gateway see mob
+ 
+ DISTRIBUTED TRacing
+ Spring cloud slueth & zipkin
+ 
+ step1.  add dependecy  to add unique id to each request
+  trace all request using alwas sampler bean now u can see all logs with unique ID
+  
+  
+  Step 2: Centerlalize  place for all this logs in one place so zipkin
+  todo so (elk kibana can be used) put it in mq then ziplin would takes that and put it in db see pic
+  
+  Install rabbit mq & configure zipkin server to connect to mq   easy option using docker and rabbit mq url as env variale
+  
+  3. connect all service to put all message to mq
+  
+  3 dependency mainly need to add
+  spring cloud starter slueth
+  spring cloud starter slueth zipkin & spring cloud starter bus amq
+  
+  now hit zipkin url localhost:9411/zipkin
+  
+  
+  Fault tolarence
+  see mob
+ 
+ 
+ 
+ 
+	   
+	   
+	   
